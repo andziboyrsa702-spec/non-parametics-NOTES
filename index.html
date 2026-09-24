@@ -15,14 +15,14 @@
 <aside id="sidebar">
 <div class="side-title">Contents</div>
 <nav>
-<a href="#preface">Preface</a><a href="#intro">1 Introduction</a><a href="#ranking">2 Ranking data</a>
+<a href="#preface">Preface</a><a href="#intro">1 Introduction</a><a href="#definitions">Core definitions</a><a href="#ranking">2 Ranking data</a>
 <div class="group">TWO POPULATIONS</div>
 <a href="#signed">3 Wilcoxon Signed Rank</a><a href="#sign">4 Sign Test</a><a href="#ranksum">5 Wilcoxon Rank Sum</a>
 <div class="group">THREE OR MORE</div>
 <a href="#kruskal">6 Kruskal–Wallis</a><a href="#friedman">7 Friedman Test</a>
 <div class="group">ASSOCIATION</div>
 <a href="#spearman">8 Spearman Rank Correlation</a>
-<div class="group">REVISION</div><a href="#choose">9 Choosing the correct test</a><a href="#strengths">10 Advantages & disadvantages</a><a href="#exam">11 Exam workflow</a>
+<div class="group">REVISION</div><a href="#choose">9 Choosing the correct test</a><a href="#strengths">10 Advantages & disadvantages</a><a href="#exam">11 Exam workflow</a><a href="#workshop">12 Practice workshop</a>
 </nav></aside>
 <main>
 <section id="preface"><h1>STA2020 Non-Parametric Statistical Techniques</h1><p class="lead">A complete companion chapter for learning, calculating and interpreting the non-parametric methods in STA2020.</p><div class="note"><strong>How to use these notes.</strong> Read the statistical idea first, then work through the ranking logic, calculation and R implementation. The aim is not to memorise commands: it is to recognise the data structure and know why a particular test is appropriate.</div></section>
@@ -88,10 +88,39 @@ rank(x, ties.method = "average")</code></pre></div>
 <h2>3.2 Assumptions</h2><p>There are two paired samples; the response is quantitative but non-normal; under the null, the population distribution of paired differences is symmetric around its median; and the paired differences are independent across pairs.</p>
 <h2>3.3 What “no effect” looks like</h2><p>The lecture develops the test by imagining the same people measured before and after treatment. Define \(d_i=\text{Before}_i-\text{After}_i\). Under \(H_0\), some differences should be positive and some negative, and the sizes of gains and losses should show no systematic pattern. Ranking the absolute differences lets us detect a systematic shift without relying on normality.</p>
 <div class="worked"><div class="worked-head">Scenario 1 — a placebo-like pattern</div><div class="table-wrap"><table><thead><tr><th>Person</th><th>Before</th><th>After</th><th>d</th><th>|d| rank</th><th>Signed rank</th></tr></thead><tbody><tr><td>1</td><td>80.0</td><td>78.6</td><td>+1.4</td><td>2</td><td>+2</td></tr><tr><td>2</td><td>73.5</td><td>76.0</td><td>−2.5</td><td>3</td><td>−3</td></tr><tr><td>3</td><td>85.0</td><td>81.2</td><td>+3.8</td><td>4</td><td>+4</td></tr><tr><td>4</td><td>69.0</td><td>74.1</td><td>−5.1</td><td>6</td><td>−6</td></tr><tr><td>5</td><td>77.8</td><td>78.5</td><td>−0.7</td><td>1</td><td>−1</td></tr><tr><td>6</td><td>90.2</td><td>86.0</td><td>+4.2</td><td>5</td><td>+5</td></tr></tbody></table></div>\[W=-1+2-3+4+5-6=+1.\]<p>The positive and negative signs are scattered across small and large ranks, so they nearly cancel. That is the behaviour expected when there is no systematic treatment shift.</p></div>
-<h2>3.4 Calculating W</h2><div class="steps"><span>1</span><p>Calculate each paired difference.</p><span>2</span><p>Remove differences equal to zero.</p><span>3</span><p>Record (n), the number of non-zero differences.</p><span>4</span><p>Record the sign and rank the absolute differences.</p><span>5</span><p>Reapply the signs to the ranks.</p><span>6</span><p>Sum the signed ranks to obtain (W).</p></div>
+<h2>3.4 Why the signed-rank idea works</h2>
+<div class="teaching"><h3>Build the intuition before the formula</h3><p>Imagine a treatment truly has no systematic effect. Some paired differences will be positive and some negative simply because of ordinary variation. More importantly, the <em>large</em> absolute differences should not all carry the same sign. Once we replace magnitudes by ranks, the positive and negative ranks should therefore roughly cancel.</p><p>If a real directional shift exists, large ranks begin accumulating on one side. That pushes the signed-rank sum (W) away from zero. This is why (Wapprox0) supports the pattern expected under (H_0), while an unusually positive or negative (W) is evidence against it.</p></div>
+<div class="concept-check"><strong>Why remove zero differences?</strong><p>A zero difference has neither a positive nor negative direction. It contributes no evidence about a shift, so it is excluded and the effective sample size (n) becomes the number of <em>non-zero</em> differences.</p></div>
+<div class="concept-check"><strong>Why rank (|d_i|) instead of (d_i)?</strong><p>First we measure the <em>size</em> of each change without allowing its sign to affect its rank. Then we reattach the sign. That separates “how large was the change?” from “which direction was the change?”</p></div>
+<h2>3.5 Manual R workflow — every step has a statistical meaning</h2>
+<div class="rbox"><div class="rhead">From the supplied Lecture 2 R script</div><pre><code>flexi_data$Difference &lt;- flexi_data$Normal - flexi_data$Flexi
+flexi_data &lt;- flexi_data[flexi_data$Difference != 0, ]
+n &lt;- nrow(flexi_data)
+flexi_data$Abs_Difference &lt;- abs(flexi_data$Difference)
+flexi_data$Rank &lt;- rank(flexi_data$Abs_Difference,
+                        ties.method = "average")
+flexi_data$Signed_Rank &lt;- flexi_data$Rank *
+                          sign(flexi_data$Difference)
+W &lt;- sum(flexi_data$Signed_Rank)
+
+mean_W &lt;- 0
+sd_W &lt;- sqrt(n*(n+1)*(2*n+1)/6)
+z &lt;- (W-mean_W)/sd_W</code></pre></div>
+<p>Read that code as the test itself: <strong>difference → remove zeros → absolute size → rank → restore direction → sum</strong>. R is not doing mysterious statistics here; the code mirrors the hand calculation.</p>
+<div class="warning"><strong>R output warning.</strong> In <code>wilcox.test()</code>, R reports <code>V</code> as the sum of the <em>positive</em> signed ranks. That is not always numerically identical to the signed-sum (W) used in the hand method in your lecture notes. Focus on using the correct course statistic for hand calculations and the p-value/interpretation when using R.</div>
+<h2>3.6 Exact distribution and normal approximation — see why it happens</h2>
+<p>Your supplied simulation script explicitly generates signed-rank sampling distributions under (H_0). For small (n), only a limited collection of rank-sign combinations is possible. As (n) grows, the distribution becomes increasingly smooth and bell-shaped; this is the intuition behind using a normal approximation for the large-sample procedure in the course.</p>
+<div class="rbox"><div class="rhead">Simulation idea from your supplied code</div><pre><code># under H0: symmetric differences around zero
+diffs &lt;- rnorm(n, mean = 0, sd = 1)
+ranks &lt;- rank(abs(diffs))
+signed_ranks &lt;- ranks * sign(diffs)
+W &lt;- sum(signed_ranks)
+
+# theoretical spread used for the normal curve
+sigma_W &lt;- sqrt(n*(n+1)*(2*n+1)/6)</code></pre></div><h2>3.7 Calculating W</h2><div class="steps"><span>1</span><p>Calculate each paired difference.</p><span>2</span><p>Remove differences equal to zero.</p><span>3</span><p>Record (n), the number of non-zero differences.</p><span>4</span><p>Record the sign and rank the absolute differences.</p><span>5</span><p>Reapply the signs to the ranks.</p><span>6</span><p>Sum the signed ranks to obtain (W).</p></div>
 <p>For (n&gt;10), the course notes use the normal approximation with</p>\[z=\frac{W-\mu_W}{\sigma_W},\qquad \mu_W=0,\qquad \sigma_W=\sqrt{\frac{n(n+1)(2n+1)}{6}}.\]
 <div class="worked"><div class="worked-head">Worked calculation from the supplied examples</div><p>One supplied worked example obtains \(W=17\) with \(n=10\), and uses \(\sigma_W=\sqrt{385}\), giving \(z\approx0.87\). The two-sided p-value is reported as 0.3898. At the 5% significance level the null hypothesis is not rejected; in context, the worked solution concludes that the free tutoring intervention did not have an effect on classroom performance.</p></div>
-<div class="rbox"><div class="rhead">R — paired Wilcoxon test</div><pre><code>wilcox.test(x, y, paired = TRUE,
+<h2>3.8 Running the test directly in R</h2><div class="rbox"><div class="rhead">R — paired Wilcoxon test</div><pre><code>wilcox.test(x, y, paired = TRUE,
             alternative = "two.sided")</code></pre></div>
 <div class="note"><strong>Do not confuse this with Rank Sum.</strong> Signed Rank starts with <em>paired differences</em>. Rank Sum combines observations from two <em>independent</em> samples.</div></section>
 
@@ -109,7 +138,25 @@ binom.test(k, n, p = 0.5,
 <h2>5.3 The ranking idea</h2><p>Combine the two samples, rank all (n_1+n_2) observations together, then calculate the rank sums (T_1) and (T_2). As a check,</p>\[T_1+T_2=\frac{(n_1+n_2)(n_1+n_2+1)}{2}.\]
 <p>If the population locations are similar, ranks should be reasonably mixed between the two samples. A systematic concentration of high or low ranks in one sample provides evidence against the null.</p>
 <div class="worked"><div class="worked-head">Visual intuition — what unequal locations look like</div><div class="rank-row"><span>Sample 1</span><b>1.5</b><b>4.5</b><b>4.5</b><b>1.5</b><b>4.5</b><b>7.5</b><b>4.5</b><b>7.5</b><b>9</b><em>T₁ = 45</em></div><div class="rank-row"><span>Sample 2</span><b>10</b><b>12</b><b>14</b><b>11</b><b>14</b><b>16.5</b><b>14</b><b>16.5</b><b>18</b><em>T₂ = 126</em></div><p>The ranks are clearly not evenly spread: the second sample receives almost all the large ranks. This is the pattern the Rank Sum test is designed to detect.</p></div>
-<div class="rbox"><div class="rhead">R — independent samples</div><pre><code>wilcox.test(response ~ group, data = dat,
+<h2>5.4 The question that decides the test</h2>
+<div class="teaching"><h3>Do not choose a test from the words “two samples”</h3><p>Ask whether each observation in sample 1 has a natural partner in sample 2. If the same people are measured twice, or subjects are deliberately matched, the observations are paired and Rank Sum is not the correct procedure. If the groups contain different unrelated observational units, they are independent and Rank Sum/Mann–Whitney is the relevant two-sample rank procedure.</p><p>The STA2020 workshop makes this distinction the central recognition rule: <strong>paired → Signed Rank; independent → Mann–Whitney–Wilcoxon</strong>.</p></div>
+<h2>5.5 Worked workshop example — histamine and allergies</h2>
+<div class="worked"><div class="worked-head">Two independent groups, with a tie</div><p>The workshop compares saliva histamine levels for people with allergies and people without allergies. The groups are independent and normality is doubtful, so the Mann–Whitney–Wilcoxon test is appropriate.</p>
+<div class="table-wrap"><table><thead><tr><th>Value</th><th>Group</th><th>Rank</th></tr></thead><tbody>
+<tr><td>4.7</td><td>Without</td><td>1</td></tr><tr><td>34.3</td><td>Without</td><td>2</td></tr><tr><td>39.6</td><td>Allergy</td><td>3.5</td></tr><tr><td>39.6</td><td>Without</td><td>3.5</td></tr><tr><td>45.5</td><td>Without</td><td>5</td></tr><tr><td>48.0</td><td>Without</td><td>6</td></tr><tr><td>67.6</td><td>Allergy</td><td>7</td></tr><tr><td>111.2</td><td>Allergy</td><td>8</td></tr></tbody></table></div>
+<p>The tied 39.6 observations occupy positions 3 and 4, so both receive ((3+4)/2=3.5). The allergy rank sum is (T_1=18.5); the other group has (T_2=17.5). Check: (18.5+17.5=36=8(9)/2).</p><p>Because (n_1=3) and (n_2=5), the workshop uses the small-sample table. It reports (T_L=7) and (T_U=20). Since (7&lt;18.5&lt;20), (H_0) is not rejected at 5%.</p></div>
+<h2>5.6 How R connects to the hand calculation</h2>
+<div class="rbox"><div class="rhead">Manual ranks and U statistics from your MannWhitneyUTest.R</div><pre><code>values &lt;- c(datproc, typing)
+group &lt;- c(rep("datproc", n1), rep("typing", n2))
+ranks &lt;- rank(values)       # average ranks for ties
+
+T1 &lt;- sum(ranks[group == "datproc"])
+T2 &lt;- sum(ranks[group == "typing"])
+
+U1 &lt;- n1*n2 + (n1*(n1+1))/2 - T1
+U2 &lt;- n1*n2 - U1
+min(U1, U2)</code></pre></div>
+<div class="note"><strong>Why can R's printed statistic look different?</strong> Your supplied R script notes that R uses a U/W formulation that can differ from the hand statistic used in the lectures. That does not mean the procedures disagree: the script tells you to focus on the p-value and interpretation, whose conclusions should agree apart from small approximation differences.</div><h2>5.7 Direct R test</h2><div class="rbox"><div class="rhead">R — independent samples</div><pre><code>wilcox.test(response ~ group, data = dat,
             paired = FALSE,
             alternative = "two.sided")</code></pre></div></section>
 
@@ -121,7 +168,30 @@ binom.test(k, n, p = 0.5,
 <p>When the null is true, ranks should be distributed fairly evenly among groups and (H) should be relatively small.</p>
 <h2>6.4 Why H becomes large</h2><div class="worked"><div class="worked-head">Compare two rank patterns</div><div class="compare"><div><strong>Uneven ranks</strong><p>Sample rank sums: 6, 15, 24</p><div class="big-stat">H = 7.2</div><small>Evidence of separated locations</small></div><div><strong>Even ranks</strong><p>Sample rank sums: 14, 15, 16</p><div class="big-stat">H = 0.0888</div><small>What we expect when locations are similar</small></div></div></div>
 <p>For the course conditions, \(H\) is compared with an upper-tail chi-squared distribution with \(k-1\) degrees of freedom. Reject \(H_0\) when \(H\) is sufficiently large or when the p-value is at most \(\alpha\).</p>
-<div class="rbox"><div class="rhead">R — Kruskal–Wallis</div><pre><code>kruskal.test(response ~ group, data = dat)</code></pre></div></section>
+<h2>6.5 Why Kruskal–Wallis is the natural extension</h2>
+<div class="teaching"><p>For two independent groups, Rank Sum asks whether one group tends to receive systematically larger ranks. With three or more independent groups, Kruskal–Wallis uses the same basic idea but tracks a rank sum for <em>every</em> group. If (H_0) is true, the groups should receive a reasonably balanced share of low, middle and high ranks. If one or more groups accumulate unusually high or low ranks, (H) increases.</p><p>The test is therefore not “ANOVA on the original observations.” The raw observations are first converted to ranks, and the between-group separation is assessed through those ranks.</p></div>
+<h2>6.6 EDA first, test second</h2><p>Your supplied Kruskal–Wallis R file performs exploratory data analysis before calling <code>kruskal.test()</code>: it draws a boxplot and uses Q–Q plots for each group. This is a useful learning habit because the graph tells you what the groups look like, while the formal test tells you whether the observed rank separation is statistically convincing.</p>
+<div class="rbox"><div class="rhead">Lecture 4 R workflow</div><pre><code>boxplot(kw1$num ~ kw1$name,
+        main = "Boxplot of shifts and speed",
+        xlab = "Shifts", ylab = "Speed")
+
+qqnorm(kw1$num[kw1$name=="mid.eight"])
+qqline(kw1$num[kw1$name=="mid.eight"])
+
+kruskal.test(num ~ name, data = kw1)</code></pre></div>
+<h2>6.7 Manual calculation in R</h2>
+<div class="rbox"><div class="rhead">The code reproduces the hand method</div><pre><code>kw1$rank &lt;- rank(kw1$num, ties.method = "average")
+T1 &lt;- sum(kw1$rank[kw1$name == "four.mid"])
+T2 &lt;- sum(kw1$rank[kw1$name == "mid.eight"])
+T3 &lt;- sum(kw1$rank[kw1$name == "eight.four"])
+
+n &lt;- nrow(kw1)
+H &lt;- (12/(n*(n+1))) *
+     (T1^2/n1 + T2^2/n2 + T3^2/n3) -
+     3*(n+1)
+
+pchisq(H, df = 2, lower.tail = FALSE)</code></pre></div>
+<div class="concept-check"><strong>Why is the chi-square test upper-tailed?</strong><p>Under (H_0), balanced ranks make (H) small. Evidence against (H_0) comes from unusually uneven rank sums, which make (H) large. Therefore the rejection region is in the upper tail.</p></div><h2>6.8 Direct R test</h2><div class="rbox"><div class="rhead">R — Kruskal–Wallis</div><pre><code>kruskal.test(response ~ group, data = dat)</code></pre></div></section>
 
 <section id="friedman"><div class="chapter">7</div><h1>Friedman Test</h1><p>The Friedman test compares <strong>more than two matched or blocked samples</strong> of ordinal or non-normal quantitative data. It is the rank-based counterpart of the randomized block design analysis.</p>
 <h2>7.1 Why blocking changes the ranking</h2><p>Kruskal–Wallis ranks observations after pooling independent groups. Friedman does something different: observations are ranked <strong>within each block</strong>. The rank sums are then calculated for treatments across blocks.</p>
@@ -167,7 +237,15 @@ p_value &lt;- pchisq(Fr, df = k-1,
 <div class="flow">
 <div class="flow-q">Are you comparing locations or measuring association?</div>
 <div class="flow-grid"><div><h3>Comparing locations</h3><p><strong>2 groups + paired:</strong> quantitative → Signed Rank; ordinal → Sign Test.</p><p><strong>2 groups + independent:</strong> Rank Sum.</p><p><strong>3+ independent:</strong> Kruskal–Wallis.</p><p><strong>3+ matched/blocked:</strong> Friedman.</p></div><div><h3>Association</h3><p>Two paired ordinal/non-normal quantitative variables → Spearman rank correlation.</p></div></div></div>
-<div class="warning"><strong>Classic exam trap:</strong> “two samples” is not enough information. Always determine whether the samples are <em>independent</em> or <em>paired/matched</em>.</div></section>
+<h2>9.1 Recognition drills from the practice workshop</h2>
+<div class="drill-grid">
+<div><strong>Nine matched pairs; tutoring and grades</strong><p>Matched/paired quantitative observations → Wilcoxon Signed Rank. “Does tutoring affect grades?” is non-directional, so think two-sided.</p></div>
+<div><strong>Left-handed vs right-handed students</strong><p>Different students in the two groups → independent → Mann–Whitney–Wilcoxon. The workshop notes that with one sample already at 10, use the course normal-approximation rule.</p></div>
+<div><strong>Matched male/female executive pairs</strong><p>Matched pairs → Signed Rank. “Do male executives earn more?” supplies a direction, so the alternative is one-sided.</p></div>
+<div><strong>Two separate video groups and ordinal happiness</strong><p>Independent groups + ordinal response → Mann–Whitney–Wilcoxon. A directional research claim determines the one-sided alternative.</p></div>
+</div>
+<h2>9.2 A five-question decision routine</h2>
+<div class="steps"><span>1</span><p><strong>What is the objective?</strong> Compare locations, test randomness/frequencies, or measure association?</p><span>2</span><p><strong>How many populations/groups?</strong> Two, three or more, or two variables measured as pairs?</p><span>3</span><p><strong>What is the response scale?</strong> Nominal, ordinal, or quantitative?</p><span>4</span><p><strong>Are observations independent or related?</strong> Same units twice, matched pairs and blocks create dependence.</p><span>5</span><p><strong>What does the wording imply for (H_1)?</strong> “Different/affect” is normally two-sided; “higher/lower/positive/negative” supplies a direction.</p></div><div class="warning"><strong>Classic exam trap:</strong> “two samples” is not enough information. Always determine whether the samples are <em>independent</em> or <em>paired/matched</em>.</div></section>
 
 <section id="strengths"><div class="chapter">10</div><h1>Advantages and Disadvantages</h1><h2>10.1 Advantages</h2><p>The course notes emphasise that non-parametric tests remain useful when parametric methods are inapplicable or their assumptions are uncertain, can be useful for small samples, usually require relatively few assumptions, and are not restricted to quantitative data.</p><h2>10.2 Disadvantages</h2><p>Ranking observations or reducing them to signs discards some of the original numerical information. Consequently, when an appropriate parametric model is valid, the corresponding non-parametric procedure tends to be less efficient or less powerful. For similar sample sizes and significance levels this can mean wider confidence intervals and less frequent rejection of a false null hypothesis.</p><div class="summary"><h3>Core message</h3><p>Non-parametric does not mean “better” or “worse.” Choose the procedure whose assumptions and data requirements fit the study.</p></div></section>
 
@@ -175,7 +253,27 @@ p_value &lt;- pchisq(Fr, df = k-1,
 <div class="steps"><span>1</span><p><strong>Identify the test and justify it:</strong> objective, number of samples, data type, and independent versus paired/blocked structure.</p><span>2</span><p><strong>State (H_0) and (H_1) in context.</strong></p><span>3</span><p><strong>Compute the statistic:</strong> show rankings, differences or rank sums where required.</p><span>4</span><p><strong>Determine the rejection rule or p-value.</strong></p><span>5</span><p><strong>Make the decision.</strong> Compare the p-value with (alpha) (or statistic with its critical region).</p><span>6</span><p><strong>Conclude in the language of the problem.</strong> Do not finish with only “reject (H_0).”</p></div>
 <h2>10.1 What your final answer should look like</h2><div class="answer-template"><p><strong>Test:</strong> Name the procedure and justify it from the data structure.</p><p><strong>Hypotheses:</strong> State both hypotheses in the language of the problem.</p><p><strong>Calculation:</strong> Show the required ranks/differences and the statistic.</p><p><strong>Critical region / p-value:</strong> State the rule before deciding.</p><p><strong>Conclusion:</strong> Refer back to the original population or research question.</p></div>
 <div class="summary"><h3>Final revision checklist</h3><p>Can you identify the data type? Can you tell paired from independent data? Can you rank ties? Can you state contextual hypotheses? Can you calculate the statistic manually? Can you reproduce the test in R? Can you interpret the p-value in context? If yes, you understand the chapter rather than merely recognising formulas.</p></div></section>
-<footer>STA2020 • Non-Parametric Statistical Techniques • Study companion</footer>
+<section id="workshop"><div class="chapter">12</div><h1>Practice Workshop — Learn the Full Reasoning</h1>
+<p>This section turns the supplied STA2020 workshop into a teaching sequence rather than an answer sheet. For each problem, first identify the structure, then state hypotheses, build the ranks, calculate, decide and finally write the conclusion in the language of the scenario.</p>
+<h2>12.1 Property values — a complete Signed Rank example</h2>
+<div class="worked"><div class="worked-head">Scenario</div><p>Ten Rondebosch properties have an assessed value and a market value. The claim is that assessed values tend to be higher. Because each property contributes both measurements, the data are paired. The direction of interest is (d=	ext{Assessed}-	ext{Market}&gt;0).</p>
+<p><strong>Contextual hypotheses:</strong> (H_0): the median assessed-minus-market difference is zero. (H_1): the median assessed-minus-market difference is greater than zero.</p>
+<div class="table-wrap"><table><thead><tr><th>Property</th><th>d</th><th>|d|</th><th>Rank</th><th>Signed rank</th></tr></thead><tbody>
+<tr><td>1</td><td>65</td><td>65</td><td>2</td><td>+2</td></tr><tr><td>2</td><td>−150</td><td>150</td><td>5.5</td><td>−5.5</td></tr><tr><td>3</td><td>−285</td><td>285</td><td>9</td><td>−9</td></tr><tr><td>4</td><td>85</td><td>85</td><td>3</td><td>+3</td></tr><tr><td>5</td><td>−150</td><td>150</td><td>5.5</td><td>−5.5</td></tr><tr><td>6</td><td>150</td><td>150</td><td>5.5</td><td>+5.5</td></tr><tr><td>7</td><td>−200</td><td>200</td><td>8</td><td>−8</td></tr><tr><td>8</td><td>25</td><td>25</td><td>1</td><td>+1</td></tr><tr><td>9</td><td>300</td><td>300</td><td>10</td><td>+10</td></tr><tr><td>10</td><td>−150</td><td>150</td><td>5.5</td><td>−5.5</td></tr></tbody></table></div>
+<p>The four absolute differences of 150 occupy ranks 4–7, hence their average rank is 5.5. The signed ranks sum to (W=-12). With (n=10), the workshop uses the normal approximation, giving (zapprox-0.61). For the upper-tailed claim, the result is nowhere near the upper rejection region; the workshop reports a p-value of about 0.73. Thus the sample does not provide evidence at 5% that assessed values are systematically higher.</p></div>
+<h2>12.2 What a strong exam answer sounds like</h2>
+<div class="answer-template"><p><strong>Do not write:</strong> “p &gt; 0.05, accept H0.”</p><p><strong>Write:</strong> “At the 5% significance level, we do not reject (H_0). There is insufficient evidence from this sample to conclude that assessed property values in the stated population tend to exceed market values.”</p></div>
+<h2>12.3 R is verification, not a replacement for understanding</h2><p>The workshop places R beside the hand solution. Use that deliberately: predict the test, alternative and direction first; perform the ranking logic; then run R and explain what each argument means. If you cannot explain <code>paired</code>, <code>exact</code> and <code>alternative</code>, you have not yet finished learning the test.</p>
+<div class="rbox"><div class="rhead">Same function, different statistical design</div><pre><code># paired
+wilcox.test(x, y, paired = TRUE,
+            exact = FALSE,
+            alternative = "greater")
+
+# independent
+wilcox.test(x, y, paired = FALSE,
+            exact = FALSE,
+            alternative = "two.sided")</code></pre></div>
+<div class="summary"><h3>Mastery target</h3><p>You should be able to look at an unfamiliar story and explain, in words, what the observational units are, whether observations are paired or independent, what is being ranked, what (H_0) means, why the statistic becomes extreme under (H_1), which tail matters, how R represents the same design, and what the final conclusion means in the original context.</p></div></section><footer>STA2020 • Non-Parametric Statistical Techniques • Study companion</footer>
 </main>
 <aside class="toc"><div class="toc-title">On this page</div><div id="pageToc"></div></aside>
 </div><script src="app.js"></script></body></html>
