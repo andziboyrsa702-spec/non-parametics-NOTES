@@ -22,7 +22,7 @@
 <a href="#kruskal">6 Kruskal–Wallis</a><a href="#friedman">7 Friedman Test</a>
 <div class="group">ASSOCIATION</div>
 <a href="#spearman">8 Spearman Rank Correlation</a>
-<div class="group">REVISION</div><a href="#choose">9 Choosing the correct test</a><a href="#strengths">10 Advantages & disadvantages</a><a href="#exam">11 Exam workflow</a><a href="#workshop">12 Practice workshop</a>
+<div class="group">REVISION</div><a href="#choose">9 Choosing the correct test</a><a href="#strengths">10 Advantages & disadvantages</a><a href="#exam">11 Exam workflow</a><a href="#workshop">12 Practice workshop</a><a href="#masterclass">Deep-teaching masterclass</a>
 </nav></aside>
 <main>
 <section id="preface"><h1>STA2020 Non-Parametric Statistical Techniques</h1><p class="lead">A complete companion chapter for learning, calculating and interpreting the non-parametric methods in STA2020.</p><div class="note"><strong>How to use these notes.</strong> Read the statistical idea first, then work through the ranking logic, calculation and R implementation. The aim is not to memorise commands: it is to recognise the data structure and know why a particular test is appropriate.</div></section>
@@ -273,7 +273,76 @@ wilcox.test(x, y, paired = TRUE,
 wilcox.test(x, y, paired = FALSE,
             exact = FALSE,
             alternative = "two.sided")</code></pre></div>
-<div class="summary"><h3>Mastery target</h3><p>You should be able to look at an unfamiliar story and explain, in words, what the observational units are, whether observations are paired or independent, what is being ranked, what (H_0) means, why the statistic becomes extreme under (H_1), which tail matters, how R represents the same design, and what the final conclusion means in the original context.</p></div></section><footer>STA2020 • Non-Parametric Statistical Techniques • Study companion</footer>
+<div class="summary"><h3>Mastery target</h3><p>You should be able to look at an unfamiliar story and explain, in words, what the observational units are, whether observations are paired or independent, what is being ranked, what (H_0) means, why the statistic becomes extreme under (H_1), which tail matters, how R represents the same design, and what the final conclusion means in the original context.</p></div></section><section id="masterclass"><div class="chapter">Deep teaching</div><h1>Masterclass: How to Think Through Non-Parametric Problems</h1>
+<p class="lead">This chapter slows the course down. The purpose is to make the reasoning visible: what the data structure means, what is actually being ranked, what the null hypothesis predicts, why the statistic becomes extreme, and how the hand method connects to R.</p>
+
+<h2>A. The one idea behind most of this chapter</h2>
+<p>Many STA2020 non-parametric procedures deliberately stop caring about the exact numerical distance between observations and instead ask where observations sit in an ordering. Suppose the raw values are 2, 20 and 200. Their gaps are very different, but their ranks are simply 1, 2 and 3. This loss of magnitude information is intentional. It allows us to make useful comparisons without relying on the same distributional model required by familiar parametric procedures.</p>
+<div class="teaching"><h3>Ranks are not random decoration</h3><p>A rank answers a relative question: <em>which observations are smaller and which are larger?</em> Once every observation has a rank, a test can detect whether high or low positions systematically collect in one group, on one side of a paired difference, or within one treatment.</p><p>This is why you should never begin a non-parametric calculation by memorising a formula. First ask: <strong>what should the ranks look like if H₀ is true?</strong> The formula is a numerical way of measuring departure from that expected pattern.</p></div>
+
+<h2>B. What “same location” means in these notes</h2>
+<p>Your lectures repeatedly describe Rank Sum, Kruskal–Wallis and Friedman as comparisons of population <strong>locations</strong>, commonly expressed as medians. Think of location as where a distribution is centred along the measurement scale. Under the course assumptions, if two populations differ, they differ with respect to location rather than having completely unrelated shapes. A shift to the right means observations tend to be larger; a shift to the left means they tend to be smaller.</p>
+<div class="compare"><div><strong>H₀ pattern</strong><p>No systematic shift. Ranks should be reasonably mixed or balanced according to the design.</p></div><div><strong>H₁ pattern</strong><p>A systematic shift exists. One group, sign, or treatment begins accumulating unusually large or small ranks.</p></div></div>
+
+<h2>C. Paired versus independent — understand the observational unit</h2>
+<p>This distinction controls several test choices. Two columns in a spreadsheet do <em>not</em> automatically mean two independent samples. Ask who or what generated each row.</p>
+<div class="worked"><div class="worked-head">Case 1: same students before and after tutoring</div><p>Student 1 has a before mark and an after mark. Those two numbers belong together. Student 2 supplies another pair. The meaningful unit for analysis is therefore the <strong>within-student difference</strong>. This is paired data, so the rank procedure begins by forming differences and leads to Wilcoxon Signed Rank for the quantitative setting in the notes.</p></div>
+<div class="worked"><div class="worked-head">Case 2: students in two unrelated teaching groups</div><p>The students in group A are different people from those in group B. There is no legitimate reason to subtract “student 1 in A” from “student 1 in B.” Instead, pool all observations and ask whether one group tends to occupy higher rank positions. That is the Rank Sum/Mann–Whitney logic.</p></div>
+<div class="warning"><strong>Diagnostic question:</strong> If I rearranged the order of observations in one group, would I destroy meaningful pairings? If yes, the data are paired. If no natural pairing exists, the samples are independent.</div>
+
+<h2>D. Ties — why the average rank is necessary</h2>
+<p>If two equal observations occupy positions 6 and 7, neither deserves to be called smaller than the other. Giving one rank 6 and the other rank 7 would create an artificial ordering. We therefore give both the average, ((6+7)/2=6.5). If three equal observations occupy positions 11, 12 and 13, each receives rank 12.</p>
+<div class="concept-check"><strong>Rank-sum check.</strong><p>Even after averaging ties, the ranks must still sum to (N(N+1)/2). This is a powerful arithmetic check in hand calculations.</p></div>
+
+<h2>E. Signed Rank from first principles</h2>
+<p>Signed Rank contains two pieces of information from every non-zero paired difference: its <strong>direction</strong> and its <strong>relative magnitude</strong>. Direction is the sign. Relative magnitude is the rank of the absolute difference.</p>
+<div class="steps"><span>1</span><p>Choose and state a subtraction order, for example (d_i=	ext{Before}_i-	ext{After}_i). Never switch direction halfway through.</p><span>2</span><p>Remove (d_i=0), because zero carries no positive or negative direction.</p><span>3</span><p>Rank (|d_i|), because ranking should depend on size rather than direction.</p><span>4</span><p>Put the original sign back onto each rank.</p><span>5</span><p>Add the signed ranks. Under (H_0), positive and negative ranks should tend to cancel.</p></div>
+<p>The lecture's large-sample treatment uses (mu_W=0) and (sigma_W=sqrt{n(n+1)(2n+1)/6}). The important conceptual point is that the standardisation asks how many null-distribution standard deviations the observed (W) lies from zero.</p>
+<div class="teaching"><h3>Read the sign of W</h3><p>If your difference is defined as First − Second, a strongly positive (W) means large positive differences dominate; a strongly negative (W) means large negative differences dominate. Therefore the meaning of “upper” and “lower” tail is inseparable from how you defined the difference.</p></div>
+
+<h2>F. Rank Sum / Mann–Whitney from first principles</h2>
+<p>Here there are no paired differences. Pool the two independent samples. Rank the combined observations. Then return the ranks to their original groups and add them. Under equal population locations, each group should receive a mixture of low, medium and high ranks.</p>
+<p>If sample 1 receives mostly tiny ranks, (T_1) becomes unusually small: sample 1 is behaving like a population shifted to the left. If sample 1 receives mostly large ranks, (T_1) becomes unusually large: sample 1 is behaving like a population shifted to the right. That is why a two-sided small-sample test has rejection regions at <em>both</em> extremes.</p>
+<div class="formula-card"><div><strong>Expected rank sum</strong><p>For the course large-sample statistic,</p>[mu_T=rac{n_1(n_1+n_2+1)}2.]<p>This is where (T_1) should centre under (H_0).</p></div><div><strong>Standard deviation</strong>[sigma_T=sqrt{rac{n_1n_2(n_1+n_2+1)}{12}}.]<p>Then (z=(T-mu_T)/sigma_T) measures how extreme the observed rank sum is.</p></div></div>
+
+<h2>G. Kruskal–Wallis — Rank Sum grows up</h2>
+<p>Now imagine three or more independent groups. The basic question has not changed. Pool everybody, rank everybody, return ranks to groups, and calculate group rank sums. The statistic (H) becomes large when the rank sums are too uneven to look like groups with the same location.</p>
+<p>The lecture assumptions matter: observations are ordinal or quantitative, treatment levels and observations within treatment levels are independent, there are at least three observations per sample, and if population distributions differ they do so with respect to location. Under the null, (H) should be relatively small. This explains why the chi-square rejection region is upper-tailed.</p>
+<div class="concept-check"><strong>What does rejection tell you?</strong><p>The lecture alternative is that <em>at least two</em> population locations differ. Rejecting the global Kruskal–Wallis null does not, by itself, identify a particular pair. Do not invent a pairwise conclusion from the omnibus statistic.</p></div>
+
+<h2>H. Friedman — why you must rank within blocks</h2>
+<p>Friedman deals with matched or blocked observations. A block may naturally sit higher or lower than another block, so comparing raw levels across blocks can obscure the treatment comparison. The solution is elegant: rank the treatments <strong>inside each block</strong>. Each block therefore performs its own mini-comparison.</p>
+<div class="worked"><div class="worked-head">Think about the manager/applicant example</div><p>An applicant is a block and managers are treatments. For one applicant, rank the managers' ratings against one another. Repeat for every applicant. Then add each manager's ranks across applicants. A manager whose ratings systematically occupy high within-applicant positions develops a large treatment rank sum.</p></div>
+<p>This is fundamentally different from Kruskal–Wallis. Kruskal–Wallis pools independent groups before ranking. Friedman respects the matching by ranking within each block. If you remember only one distinction, remember <strong>pool globally for Kruskal–Wallis; rank locally within blocks for Friedman</strong>.</p>
+
+<h2>I. Spearman — ranks now measure association</h2>
+<p>Spearman changes the objective. We are no longer asking whether population locations differ. Each observational unit supplies an (X) and a (Y). Rank (X), rank (Y), and compare the two rank orderings.</p>
+<p>If high (X) ranks tend to occur with high (Y) ranks, the rank differences (d_i=R(X_i)-R(Y_i)) tend to be small and (r_s) becomes positive. If high (X) ranks tend to pair with low (Y) ranks, the orderings run in opposite directions and (r_s) becomes negative. Values near zero indicate little rank association.</p>
+<div class="note"><strong>Do not say “X causes Y.”</strong> Your Spearman lecture explicitly separates association from causation: association may arise through interaction, coincidence, or unmeasured variables affecting both.</div>
+
+<h2>J. How to derive the alternative from English</h2>
+<div class="table-wrap"><table><thead><tr><th>Question wording</th><th>Statistical direction</th><th>What to think</th></tr></thead><tbody>
+<tr><td>“Is there a difference?” / “Does it affect?”</td><td>Two-sided</td><td>Either direction would count as evidence.</td></tr>
+<tr><td>“Is population 1 higher?”</td><td>Right/greater alternative</td><td>Evidence must point specifically toward larger values for population 1.</td></tr>
+<tr><td>“Is population 1 lower?”</td><td>Left/less alternative</td><td>Evidence must point specifically toward smaller values for population 1.</td></tr>
+<tr><td>“Are the variables positively associated?”</td><td>(ho_s&gt;0)</td><td>Large ranks in one variable should align with large ranks in the other.</td></tr>
+</tbody></table></div>
+<p>Never choose the tail after seeing the statistic. The research question determines (H_1), and (H_1) determines the rejection tail.</p>
+
+<h2>K. Critical-value and p-value approaches are the same decision logic</h2>
+<p>A critical region asks whether the statistic crossed a pre-selected boundary. A p-value asks how surprising the observed statistic (or something more extreme) would be under (H_0). Both are ways of judging whether the data are sufficiently incompatible with (H_0) at significance level (alpha).</p>
+<div class="compare"><div><strong>Critical-value route</strong><p>State the rejection region → calculate statistic → check whether it falls in the region.</p></div><div><strong>p-value route</strong><p>Calculate statistic → obtain p-value → reject when p-value (lealpha).</p></div></div>
+
+<h2>L. How to read R rather than worship R</h2>
+<p>Every R command should answer a design question. <code>paired = TRUE</code> says observations are naturally linked. <code>paired = FALSE</code> says the groups are independent. <code>alternative = "greater"</code>, <code>"less"</code> or <code>"two.sided"</code> encodes (H_1). Formula notation such as <code>response ~ group</code> says “compare the response across these groups.” In Friedman formula notation, <code>rating ~ manager | applicant</code> explicitly identifies treatment and block.</p>
+<div class="warning"><strong>Exam habit:</strong> Before running R, write down the test, data structure and alternative. If the software output surprises you, return to those three decisions before changing code.</div>
+
+<h2>M. The full exam reasoning chain</h2>
+<div class="steps"><span>1</span><p><strong>Translate the story.</strong> Identify observational units, response variable, groups/variables, and the research objective.</p><span>2</span><p><strong>Classify the data.</strong> Nominal, ordinal, interval or ratio; quantitative normality matters where specified by the course.</p><span>3</span><p><strong>Identify dependence.</strong> Independent, paired/matched, or blocked.</p><span>4</span><p><strong>Select and justify the procedure.</strong> Do not merely name it.</p><span>5</span><p><strong>Write contextual hypotheses.</strong> Preserve direction from the question.</p><span>6</span><p><strong>Construct the ranks/signs correctly.</strong> Show ties and checks.</p><span>7</span><p><strong>Calculate the statistic.</strong> State what each symbol represents.</p><span>8</span><p><strong>Use the correct sampling rule.</strong> Exact table or large-sample approximation according to the lecture rule.</p><span>9</span><p><strong>Decide.</strong> Use the critical region or p-value consistently.</p><span>10</span><p><strong>Conclude in context.</strong> State what the evidence says about the actual populations/research question.</p></div>
+
+<h2>N. Mastery questions — answer these without looking up a formula</h2>
+<div class="drill-grid"><div><strong>1. Same patients, before/after</strong><p>Why is Rank Sum wrong even though there are two columns?</p></div><div><strong>2. Three unrelated treatment groups</strong><p>Why is Friedman wrong and Kruskal–Wallis structurally appropriate?</p></div><div><strong>3. Four managers rate the same applicants</strong><p>What is the block? What is the treatment? Where must ranking occur?</p></div><div><strong>4. Study time and final mark</strong><p>Why are we testing association rather than comparing locations?</p></div><div><strong>5. Two equal observations occupy ranks 8 and 9</strong><p>Why must both receive 8.5?</p></div><div><strong>6. Kruskal–Wallis rejects H₀</strong><p>What can you conclude, and what can you <em>not</em> conclude from that result alone?</p></div></div>
+<div class="summary"><h3>The goal</h3><p>Do not aim to recognise a formula. Aim to be able to explain the entire test to another STA2020 student from the research question all the way to the contextual conclusion. Once that reasoning is secure, the formulas and R commands become much easier to remember.</p></div></section><footer>STA2020 • Non-Parametric Statistical Techniques • Study companion</footer>
 </main>
 <aside class="toc"><div class="toc-title">On this page</div><div id="pageToc"></div></aside>
 </div><script src="app.js"></script></body></html>
