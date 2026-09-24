@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STA2020 Non-Parametric Statistical Techniques</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="top"><button id="menu" aria-label="Toggle contents">☰</button><a class="brand" href="#intro">STA2020 Non-Parametric Notes</a><div class="top-right">STA2020</div></header>
+<div class="layout">
+<aside id="sidebar">
+<div class="side-title">Contents</div>
+<nav>
+<a href="#preface">Preface</a><a href="#intro">1 Introduction</a><a href="#ranking">2 Ranking data</a>
+<div class="group">TWO POPULATIONS</div>
+<a href="#signed">3 Wilcoxon Signed Rank</a><a href="#sign">4 Sign Test</a><a href="#ranksum">5 Wilcoxon Rank Sum</a>
+<div class="group">THREE OR MORE</div>
+<a href="#kruskal">6 Kruskal–Wallis</a><a href="#friedman">7 Friedman Test</a>
+<div class="group">ASSOCIATION</div>
+<a href="#spearman">8 Spearman Rank Correlation</a>
+<div class="group">REVISION</div><a href="#choose">9 Choosing the correct test</a><a href="#exam">10 Exam workflow</a>
+</nav></aside>
+<main>
+<section id="preface"><h1>STA2020 Non-Parametric Statistical Techniques</h1><p class="lead">A complete companion chapter for learning, calculating and interpreting the non-parametric methods in STA2020.</p><div class="note"><strong>How to use these notes.</strong> Read the statistical idea first, then work through the ranking logic, calculation and R implementation. The aim is not to memorise commands: it is to recognise the data structure and know why a particular test is appropriate.</div></section>
+
+<section id="intro"><div class="chapter">1</div><h1>Introduction to Non-Parametric Techniques</h1><p>Parametric procedures rely on a specified population model, commonly a normal model. Non-parametric procedures make weaker distributional assumptions and many of their test statistics are built from <strong>ranks, signs or frequencies</strong> rather than the original numerical magnitudes.</p>
+<h2>1.1 When are they useful?</h2><p>In this course, non-parametric techniques become especially useful when quantitative observations are non-normal or their distribution is uncertain, when samples are small, or when the response is ordinal or nominal. Random sampling and the relevant independence conditions still matter.</p>
+<div class="note"><strong>Important.</strong> “Non-parametric” does not mean “no assumptions.” It means the procedure does not depend on a particular parametric distribution in the same way as its parametric counterpart.</div>
+<h2>1.2 Data types</h2><div class="diagram"><div class="node root">Random variable</div><div class="branches"><div><div class="node aqua">Qualitative<br><small>(categorical)</small></div><div class="leaves"><span>Nominal</span><span>Ordinal</span></div></div><div><div class="node aqua">Quantitative<br><small>(numeric)</small></div><div class="leaves"><span>Interval</span><span>Ratio</span></div></div></div></div>
+<p><strong>Nominal</strong> data consist of categories with no natural order. <strong>Ordinal</strong> categories can be ordered, although the distances between categories need not be meaningful. <strong>Interval</strong> measurements have meaningful differences but no meaningful true zero, while <strong>ratio</strong> measurements have both meaningful differences and a true zero.</p>
+<h2>1.3 The map of tests</h2><div class="table-wrap"><table><thead><tr><th>Objective</th><th>Data relationship</th><th>STA2020 method</th><th>Parametric counterpart</th></tr></thead><tbody>
+<tr><td>Compare 2 locations</td><td>Paired; non-normal quantitative</td><td>Wilcoxon Signed Rank</td><td>Paired t-test</td></tr>
+<tr><td>Compare 2 locations</td><td>Paired; ordinal</td><td>Sign Test</td><td>Paired t-test</td></tr>
+<tr><td>Compare 2 locations</td><td>Independent; ordinal/non-normal quantitative</td><td>Wilcoxon Rank Sum</td><td>Independent t-test</td></tr>
+<tr><td>Compare 3+ locations</td><td>Independent</td><td>Kruskal–Wallis</td><td>One-way ANOVA</td></tr>
+<tr><td>Compare 3+ locations</td><td>Matched/blocked</td><td>Friedman</td><td>Two-way ANOVA without interaction</td></tr>
+<tr><td>Association</td><td>Paired observations</td><td>Spearman rank correlation</td><td>Pearson correlation</td></tr>
+</tbody></table></div></section>
+
+<section id="ranking"><div class="chapter">2</div><h1>Ranking Data</h1><p>Ranking is the common language of many non-parametric procedures. We replace each observation by its position after ordering the data.</p>
+<h2>2.1 Ranking without ties</h2><div class="example"><div class="example-title">Example 2.1</div><p>For the observations 4, 9, 6, 7, 5, 2, 8, order them as 2, 4, 5, 6, 7, 8, 9. Their ranks are therefore 1 through 7.</p></div>
+<h2>2.2 Tied observations</h2><p>If observations occupy the same value, assign each tied observation the <strong>average of the positions they would have occupied</strong>. If two 29s occupy positions 6 and 7, each receives rank ((6+7)/2=6.5).</p>
+<div class="rbox"><div class="rhead">R — ranking values</div><pre><code>x &lt;- c(29,18,29,19,20,21,34,33,30,23)
+rank(x, ties.method = "average")</code></pre></div>
+<div class="summary"><h3>Summary</h3><p>Order → assign positions → identify ties → replace tied positions by their average. Keep this rule in mind: it reappears in every rank-based test.</p></div></section>
+
+<section id="signed"><div class="chapter">3</div><h1>Wilcoxon Signed Rank Sum Test</h1><p>This procedure compares <strong>two matched or paired samples</strong> of quantitative, non-normal data with respect to their central locations. The analysis is performed on the paired differences.</p>
+<h2>3.1 Hypotheses</h2><p>The null hypothesis states that the location (median) of the paired differences is zero. The alternative may be two-sided or directional. In an assessment, state the hypotheses in the context of the question rather than only writing symbols.</p>
+<h2>3.2 Assumptions</h2><p>There are two paired samples; the response is quantitative but non-normal; under the null, the population distribution of paired differences is symmetric around its median; and the paired differences are independent across pairs.</p>
+<h2>3.3 Calculating W</h2><div class="steps"><span>1</span><p>Calculate each paired difference.</p><span>2</span><p>Remove differences equal to zero.</p><span>3</span><p>Record (n), the number of non-zero differences.</p><span>4</span><p>Record the sign and rank the absolute differences.</p><span>5</span><p>Reapply the signs to the ranks.</p><span>6</span><p>Sum the signed ranks to obtain (W).</p></div>
+<p>For (n&gt;10), the course notes use the normal approximation with</p>\[z=\frac{W-\mu_W}{\sigma_W},\qquad \mu_W=0,\qquad \sigma_W=\sqrt{\frac{n(n+1)(2n+1)}{6}}.\]
+<div class="rbox"><div class="rhead">R — paired Wilcoxon test</div><pre><code>wilcox.test(x, y, paired = TRUE,
+            alternative = "two.sided")</code></pre></div>
+<div class="note"><strong>Do not confuse this with Rank Sum.</strong> Signed Rank starts with <em>paired differences</em>. Rank Sum combines observations from two <em>independent</em> samples.</div></section>
+
+<section id="sign"><div class="chapter">4</div><h1>Sign Test</h1><p>The Sign Test is the simpler paired comparison in this chapter. It uses only whether a paired difference is positive or negative rather than how large that difference is. It is therefore appropriate when the paired response is ordinal, or when the magnitude/rank structure required by Signed Rank is not the focus.</p>
+<h2>4.1 Procedure</h2><p>Compute paired differences, discard zero differences, count the positive and negative signs, and assess whether the observed imbalance is plausible under the null hypothesis. Under the null, positive and negative signs are equally likely.</p>
+<div class="rbox"><div class="rhead">R — exact binomial calculation</div><pre><code># k = number of positive non-zero differences
+# n = total number of non-zero differences
+binom.test(k, n, p = 0.5,
+           alternative = "two.sided")</code></pre></div></section>
+
+<section id="ranksum"><div class="chapter">5</div><h1>Wilcoxon Rank Sum Test</h1><p>Also called the <strong>Mann–Whitney U test</strong>, this test compares the locations of <strong>two independent</strong> populations using ordinal or non-normal quantitative observations.</p>
+<h2>5.1 Data and assumptions</h2><p>There are two random samples of sizes (n_1) and (n_2); samples and observations within samples are independent; and, if the populations differ, the course formulation assumes that they differ with respect to location.</p>
+<h2>5.2 The ranking idea</h2><p>Combine the two samples, rank all (n_1+n_2) observations together, then calculate the rank sums (T_1) and (T_2). As a check,</p>\[T_1+T_2=\frac{(n_1+n_2)(n_1+n_2+1)}{2}.\]
+<p>If the population locations are similar, ranks should be reasonably mixed between the two samples. A systematic concentration of high or low ranks in one sample provides evidence against the null.</p>
+<div class="rbox"><div class="rhead">R — independent samples</div><pre><code>wilcox.test(response ~ group, data = dat,
+            paired = FALSE,
+            alternative = "two.sided")</code></pre></div></section>
+
+<section id="kruskal"><div class="chapter">6</div><h1>Kruskal–Wallis Test</h1><p>Kruskal–Wallis extends rank-based comparison to <strong>more than two independent groups</strong>. In STA2020 it is the non-parametric counterpart of a single-factor (one-way) ANOVA.</p>
+<h2>6.1 Conditions</h2><p>The observations are ordinal or quantitative and need not be normal; treatment levels and observations within treatment levels are independent; there are at least three observations per sample; and population distributions differ only in location if they differ.</p>
+<h2>6.2 Hypotheses</h2><p>(H_0): the locations of all (k) populations are the same. (H_1): at least two population locations differ.</p>
+<h2>6.3 Test statistic</h2><p>Pool all observations, rank from smallest to largest, average tied ranks and obtain rank sums (T_1,ldots,T_k). With total sample size (n_T),</p>
+\[H=\frac{12}{n_T(n_T+1)}\sum_{i=1}^{k}\frac{T_i^2}{n_i}-3(n_T+1).\]
+<p>When the null is true, ranks should be distributed fairly evenly among groups and (H) should be relatively small.</p>
+<div class="rbox"><div class="rhead">R — Kruskal–Wallis</div><pre><code>kruskal.test(response ~ group, data = dat)</code></pre></div></section>
+
+<section id="friedman"><div class="chapter">7</div><h1>Friedman Test</h1><p>The Friedman test compares <strong>more than two matched or blocked samples</strong> of ordinal or non-normal quantitative data. It is the rank-based counterpart of the randomized block design analysis.</p>
+<h2>7.1 Why blocking changes the ranking</h2><p>Kruskal–Wallis ranks observations after pooling independent groups. Friedman does something different: observations are ranked <strong>within each block</strong>. The rank sums are then calculated for treatments across blocks.</p>
+<h2>7.2 Assumptions</h2><p>Data arise from a blocked experiment with (b) blocks. Measurements inside a block are related, measurements from different blocks are independent, and the course notes assume no block-by-treatment interaction.</p>
+<h2>7.3 Hypotheses and statistic</h2><p>(H_0): all (k) treatment locations are the same. (H_1): at least two treatment locations differ.</p>
+\[F_r=\frac{12}{bk(k+1)}\sum_{j=1}^{k}T_j^2-3b(k+1).\]
+<p>When either (k) or (b) is at least 5, the course uses an approximate chi-squared distribution with (k-1) degrees of freedom.</p>
+<div class="rbox"><div class="rhead">R — two equivalent forms from the lecture code</div><pre><code>friedman.test(y = fr.1$rating,
+              groups = fr.1$manager,
+              blocks = fr.1$applicant)
+
+friedman.test(rating ~ manager | applicant,
+              data = fr.1)</code></pre></div>
+<h2>7.4 Manual R workflow</h2><div class="rbox"><div class="rhead">Rank inside blocks → rank sums → statistic</div><pre><code>ranked_rating &lt;- t(apply(wide_rating, 1, rank,
+                         ties.method = "average"))
+rank_sums &lt;- colSums(ranked_rating)
+
+n &lt;- nrow(wide_rating) # blocks
+k &lt;- ncol(wide_rating) # treatments
+
+Fr &lt;- (12/(n*k*(k+1))) * sum(rank_sums^2) -
+      3*n*(k+1)
+p_value &lt;- pchisq(Fr, df = k-1,
+                   lower.tail = FALSE)</code></pre></div></section>
+
+<section id="spearman"><div class="chapter">8</div><h1>Spearman’s Rank Correlation Test</h1><p>Spearman’s method changes the objective: rather than comparing population locations, we measure <strong>association between two variables</strong>. Both variables are at least ordinal, and the observations occur in pairs.</p>
+<div class="note"><strong>Association is not causation.</strong> An association may arise because variables interact, by coincidence, or because both are affected by another variable not measured in the study.</div>
+<h2>8.1 Hypotheses</h2><p>(H_0:\rho_s=0): no association in the underlying population. Alternatives may state a non-zero, positive or negative association.</p>
+<h2>8.2 Calculating the coefficient</h2><p>Rank (X) and (Y) separately, calculate (d_i=R(X_i)-R(Y_i)), and use</p>
+\[r_s=1-\frac{6\sum d_i^2}{n(n^2-1)}.\]
+<p>For the large-sample treatment used in the notes ((n\ge10)),</p>\[z=r_s\sqrt{n-1}.\]
+<div class="scale"><span>−1<br><small>negative</small></span><span>−0.5</span><span>0<br><small>no rank association</small></span><span>0.5</span><span>+1<br><small>positive</small></span></div>
+<div class="rbox"><div class="rhead">R — Spearman correlation</div><pre><code>cor.test(x, y, method = "spearman",
+         alternative = "two.sided")</code></pre></div></section>
+
+<section id="choose"><div class="chapter">9</div><h1>Choosing the Correct Test</h1><p>Start with the <strong>objective and data structure</strong>, not the name of a test.</p>
+<div class="flow">
+<div class="flow-q">Are you comparing locations or measuring association?</div>
+<div class="flow-grid"><div><h3>Comparing locations</h3><p><strong>2 groups + paired:</strong> quantitative → Signed Rank; ordinal → Sign Test.</p><p><strong>2 groups + independent:</strong> Rank Sum.</p><p><strong>3+ independent:</strong> Kruskal–Wallis.</p><p><strong>3+ matched/blocked:</strong> Friedman.</p></div><div><h3>Association</h3><p>Two paired ordinal/non-normal quantitative variables → Spearman rank correlation.</p></div></div></div>
+<div class="warning"><strong>Classic exam trap:</strong> “two samples” is not enough information. Always determine whether the samples are <em>independent</em> or <em>paired/matched</em>.</div></section>
+
+<section id="exam"><div class="chapter">10</div><h1>Exam Workflow & Worked-Answer Structure</h1><p>The tutorials and memos consistently expect more than a test name. A complete answer should show the statistical reasoning from the question to the conclusion.</p>
+<div class="steps"><span>1</span><p><strong>Identify the test and justify it:</strong> objective, number of samples, data type, and independent versus paired/blocked structure.</p><span>2</span><p><strong>State (H_0) and (H_1) in context.</strong></p><span>3</span><p><strong>Compute the statistic:</strong> show rankings, differences or rank sums where required.</p><span>4</span><p><strong>Determine the rejection rule or p-value.</strong></p><span>5</span><p><strong>Make the decision.</strong> Compare the p-value with (alpha) (or statistic with its critical region).</p><span>6</span><p><strong>Conclude in the language of the problem.</strong> Do not finish with only “reject (H_0).”</p></div>
+<div class="summary"><h3>Final revision checklist</h3><p>Can you identify the data type? Can you tell paired from independent data? Can you rank ties? Can you state contextual hypotheses? Can you calculate the statistic manually? Can you reproduce the test in R? Can you interpret the p-value in context? If yes, you understand the chapter rather than merely recognising formulas.</p></div></section>
+<footer>STA2020 • Non-Parametric Statistical Techniques • Study companion</footer>
+</main>
+<aside class="toc"><div class="toc-title">On this page</div><div id="pageToc"></div></aside>
+</div><script src="app.js"></script></body></html>
