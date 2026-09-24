@@ -47,6 +47,34 @@
 <tr><td>Single population / sequence</td><td>Nominal; independent observations</td><td>Runs test for randomness of order</td><td>—</td></tr><tr><td>Single population / frequencies</td><td>Nominal; independent observations</td><td>Chi-square goodness-of-fit</td><td>—</td></tr></tbody></table></div>
 <div class="note"><strong>Scope note.</strong> Your Lecture 1 overview names the Runs test and Chi-square goodness-of-fit as single-population non-parametric procedures. The supplied chapter material used to build this site does not provide the same full lecture treatment for these two procedures as it does for the rank-based tests, so they are retained in the overview rather than padded with material that is not in your notes.</div></section>
 
+<section id="definitions"><div class="chapter">Core reference</div><h1>Definitions You Must Understand</h1>
+<p>This reference section collects the language used throughout the lectures. Do not memorise a test name without understanding what the words in its conditions mean.</p>
+<div class="definition-grid">
+<div><strong>Population</strong><p>The full group about which we want to make a statistical conclusion.</p></div>
+<div><strong>Sample</strong><p>The observations actually collected from a population and used to make an inference.</p></div>
+<div><strong>Parametric technique</strong><p>A statistical method built around assumptions about an underlying population distribution and its parameters. In this course the familiar examples typically rely on normality.</p></div>
+<div><strong>Non-parametric technique</strong><p>A method that makes weaker distributional assumptions and does not depend on parameters specific to one distribution. The course procedures work mainly with ranks, signs or frequencies.</p></div>
+<div><strong>Distribution-free</strong><p>A description used because many non-parametric statistics depend on relative order or signs rather than the exact numerical values and therefore do not require one specific population distribution.</p></div>
+<div><strong>Statistical power</strong><p>The probability that a test rejects the null hypothesis when the alternative hypothesis is true — equivalently, avoiding a Type II error.</p></div>
+<div><strong>Nominal data</strong><p>Categorical observations with no natural order, such as blood type or make of car.</p></div>
+<div><strong>Ordinal data</strong><p>Categories that have a meaningful order, but numerical differences between adjacent categories are not necessarily meaningful, such as a Likert scale.</p></div>
+<div><strong>Interval data</strong><p>Numerical values for which differences are meaningful but there is no true zero; ratios are therefore not meaningful. Celsius temperature is the standard example.</p></div>
+<div><strong>Ratio data</strong><p>Numerical values with meaningful differences and a true zero, so ratios are meaningful. Weight is an example.</p></div>
+<div><strong>Rank</strong><p>The relative position of an observation after the values have been ordered, usually from smallest to largest.</p></div>
+<div><strong>Tie</strong><p>Two or more observations with the same value. They receive the average of the rank positions they occupy.</p></div>
+<div><strong>Independent samples</strong><p>Samples in which membership or measurement in one sample is not paired with or dependent on membership or measurement in another.</p></div>
+<div><strong>Matched / paired samples</strong><p>Two sets of measurements that are naturally linked, for example before and after measurements on the same person or deliberately matched subjects.</p></div>
+<div><strong>Location</strong><p>The central position of a population distribution. In these lectures, comparisons of location are commonly described in terms of medians.</p></div>
+<div><strong>Null hypothesis (H₀)</strong><p>The baseline claim tested by the procedure, such as no difference in population locations or no association.</p></div>
+<div><strong>Alternative hypothesis (H₁)</strong><p>The competing claim: a difference, a directional shift, or an association. The lectures require this to be written in the context of the question.</p></div>
+<div><strong>Significance level (α)</strong><p>The threshold used for deciding whether evidence against H₀ is sufficiently strong.</p></div>
+<div><strong>p-value</strong><p>The probability, calculated under H₀, of obtaining a test statistic at least as incompatible with H₀ as the observed result. In the course decision rule, reject H₀ when the p-value is at most α.</p></div>
+<div><strong>Critical region</strong><p>The set of test-statistic values for which H₀ is rejected. Its tail or tails depend on H₁.</p></div>
+<div><strong>Treatment</strong><p>In the Friedman setting, a treatment is one of the populations/variables being compared — what is administered or compared across experimental units.</p></div>
+<div><strong>Block</strong><p>A grouping of related experimental units introduced to improve treatment comparisons. Friedman ranks treatments within each block.</p></div>
+<div><strong>Association</strong><p>A relationship between two variables. Association by itself must not be interpreted as cause and effect.</p></div>
+<div><strong>Monotonic relationship</strong><p>A relationship where, as one variable increases, the other tends consistently to increase or consistently to decrease. Spearman targets monotonic rather than specifically linear association.</p></div>
+</div></section>
 <section id="ranking"><div class="chapter">2</div><h1>Ranking Data</h1><p>Ranking is the common language of many non-parametric procedures. We replace each observation by its position after ordering the data.</p>
 <h2>2.1 Ranking without ties</h2><div class="example"><div class="example-title">Example 2.1</div><p>For the observations 4, 9, 6, 7, 5, 2, 8, order them as 2, 4, 5, 6, 7, 8, 9. Their ranks are therefore 1 through 7.</p></div>
 <h2>2.2 Tied observations</h2><p>If observations occupy the same value, assign each tied observation the <strong>average of the positions they would have occupied</strong>. If two 29s occupy positions 6 and 7, each receives rank ((6+7)/2=6.5).</p>
@@ -86,7 +114,7 @@ binom.test(k, n, p = 0.5,
             alternative = "two.sided")</code></pre></div></section>
 
 <section id="kruskal"><div class="chapter">6</div><h1>Kruskal–Wallis Test</h1><p>Kruskal–Wallis extends rank-based comparison to <strong>more than two independent groups</strong>. In STA2020 it is the non-parametric counterpart of a single-factor (one-way) ANOVA.</p>
-<h2>6.1 Conditions</h2><p>The observations are ordinal or quantitative and need not be normal; treatment levels and observations within treatment levels are independent; there are at least three observations per sample; and population distributions differ only in location if they differ.</p>
+<div class="plain-language"><strong>In plain language:</strong> Kruskal–Wallis asks whether three or more <em>independent</em> groups appear to be centred in the same place. It is the non-parametric counterpart of single-factor / one-way ANOVA in the supplied notes.</div><h2>6.1 Conditions</h2><p>The observations are ordinal or quantitative and need not be normal; treatment levels and observations within treatment levels are independent; there are at least three observations per sample; and population distributions differ only in location if they differ.</p>
 <h2>6.2 Hypotheses</h2><p>(H_0): the locations of all (k) populations are the same. (H_1): at least two population locations differ.</p>
 <h2>6.3 Test statistic</h2><p>Pool all observations, rank from smallest to largest, average tied ranks and obtain rank sums (T_1,ldots,T_k). With total sample size (n_T),</p>
 \[H=\frac{12}{n_T(n_T+1)}\sum_{i=1}^{k}\frac{T_i^2}{n_i}-3(n_T+1).\]
@@ -129,7 +157,7 @@ p_value &lt;- pchisq(Fr, df = k-1,
 \[r_s=1-\frac{6\sum d_i^2}{n(n^2-1)}.\]
 <p>For the large-sample treatment used in the notes ((n\ge10)),</p>\[z=r_s\sqrt{n-1}.\]
 <div class="scale"><span>−1<br><small>negative</small></span><span>−0.5</span><span>0<br><small>no rank association</small></span><span>0.5</span><span>+1<br><small>positive</small></span></div>
-<h2>8.3 Lecture example — study time and grade</h2><div class="worked"><div class="worked-head">From ranks to a test decision</div><p>The lecture example has \(n=35\) paired observations and \(\sum d_i^2=1962.5\).</p>\[r_s=1-\frac{6(1962.5)}{35(35^2-1)}=0.7251.\]
+<h2>8.4 Lecture example — study time and grade</h2><div class="worked"><div class="worked-head">From ranks to a test decision</div><p>The lecture example has \(n=35\) paired observations and \(\sum d_i^2=1962.5\).</p>\[r_s=1-\frac{6(1962.5)}{35(35^2-1)}=0.7251.\]
 <p>The large-sample statistic is</p>\[z=(0.7251)\sqrt{34}=4.228.\]
 <p>The notes compare this with 1.645 at the 5% level for the stated positive-direction test and report a p-value below 0.0001. The contextual conclusion is that study time and grade are positively correlated.</p></div>
 <div class="rbox"><div class="rhead">R — Spearman correlation</div><pre><code>cor.test(x, y, method = "spearman",
