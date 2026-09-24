@@ -66,8 +66,11 @@ binom.test(k, n, p = 0.5,
 
 <section id="ranksum"><div class="chapter">5</div><h1>Wilcoxon Rank Sum Test</h1><p>Also called the <strong>Mann–Whitney U test</strong>, this test compares the locations of <strong>two independent</strong> populations using ordinal or non-normal quantitative observations.</p>
 <h2>5.1 Data and assumptions</h2><p>There are two random samples of sizes (n_1) and (n_2); samples and observations within samples are independent; and, if the populations differ, the course formulation assumes that they differ with respect to location.</p>
-<h2>5.2 The ranking idea</h2><p>Combine the two samples, rank all (n_1+n_2) observations together, then calculate the rank sums (T_1) and (T_2). As a check,</p>\[T_1+T_2=\frac{(n_1+n_2)(n_1+n_2+1)}{2}.\]
+<h2>5.2 Small versus large samples</h2><p>The course treats the Rank Sum statistic differently according to sample size. If <strong>both</strong> sample sizes are below 10, use the exact rank-sum table. If either sample size is at least 10, use the normal approximation.</p>
+<div class="formula-card"><div><strong>Small sample</strong><p>Use \(T=T_1\). For a two-sided test, reject in either tail:</p>\[T\le T_L\quad\text{or}\quad T\ge T_U,\qquad T_U=n_1(n_1+n_2+1)-T_L.\]</div><div><strong>Large sample</strong>\[z=\frac{T-\mu_T}{\sigma_T},\quad \mu_T=\frac{n_1(n_1+n_2+1)}2,\quad \sigma_T=\sqrt{\frac{n_1n_2(n_1+n_2+1)}{12}}.\]</div></div>
+<h2>5.3 The ranking idea</h2><p>Combine the two samples, rank all (n_1+n_2) observations together, then calculate the rank sums (T_1) and (T_2). As a check,</p>\[T_1+T_2=\frac{(n_1+n_2)(n_1+n_2+1)}{2}.\]
 <p>If the population locations are similar, ranks should be reasonably mixed between the two samples. A systematic concentration of high or low ranks in one sample provides evidence against the null.</p>
+<div class="worked"><div class="worked-head">Visual intuition — what unequal locations look like</div><div class="rank-row"><span>Sample 1</span><b>1.5</b><b>4.5</b><b>4.5</b><b>1.5</b><b>4.5</b><b>7.5</b><b>4.5</b><b>7.5</b><b>9</b><em>T₁ = 45</em></div><div class="rank-row"><span>Sample 2</span><b>10</b><b>12</b><b>14</b><b>11</b><b>14</b><b>16.5</b><b>14</b><b>16.5</b><b>18</b><em>T₂ = 126</em></div><p>The ranks are clearly not evenly spread: the second sample receives almost all the large ranks. This is the pattern the Rank Sum test is designed to detect.</p></div>
 <div class="rbox"><div class="rhead">R — independent samples</div><pre><code>wilcox.test(response ~ group, data = dat,
             paired = FALSE,
             alternative = "two.sided")</code></pre></div></section>
@@ -78,6 +81,8 @@ binom.test(k, n, p = 0.5,
 <h2>6.3 Test statistic</h2><p>Pool all observations, rank from smallest to largest, average tied ranks and obtain rank sums (T_1,ldots,T_k). With total sample size (n_T),</p>
 \[H=\frac{12}{n_T(n_T+1)}\sum_{i=1}^{k}\frac{T_i^2}{n_i}-3(n_T+1).\]
 <p>When the null is true, ranks should be distributed fairly evenly among groups and (H) should be relatively small.</p>
+<h2>6.4 Why H becomes large</h2><div class="worked"><div class="worked-head">Compare two rank patterns</div><div class="compare"><div><strong>Uneven ranks</strong><p>Sample rank sums: 6, 15, 24</p><div class="big-stat">H = 7.2</div><small>Evidence of separated locations</small></div><div><strong>Even ranks</strong><p>Sample rank sums: 14, 15, 16</p><div class="big-stat">H = 0.0888</div><small>What we expect when locations are similar</small></div></div></div>
+<p>For the course conditions, \(H\) is compared with an upper-tail chi-squared distribution with \(k-1\) degrees of freedom. Reject \(H_0\) when \(H\) is sufficiently large or when the p-value is at most \(\alpha\).</p>
 <div class="rbox"><div class="rhead">R — Kruskal–Wallis</div><pre><code>kruskal.test(response ~ group, data = dat)</code></pre></div></section>
 
 <section id="friedman"><div class="chapter">7</div><h1>Friedman Test</h1><p>The Friedman test compares <strong>more than two matched or blocked samples</strong> of ordinal or non-normal quantitative data. It is the rank-based counterpart of the randomized block design analysis.</p>
@@ -92,7 +97,10 @@ binom.test(k, n, p = 0.5,
 
 friedman.test(rating ~ manager | applicant,
               data = fr.1)</code></pre></div>
-<h2>7.4 Manual R workflow</h2><div class="rbox"><div class="rhead">Rank inside blocks → rank sums → statistic</div><pre><code>ranked_rating &lt;- t(apply(wide_rating, 1, rank,
+<h2>7.4 Class example — four managers</h2><div class="worked"><div class="worked-head">Applicant ratings ranked within blocks</div><p>Eight applicants form the <strong>blocks</strong>; four managers form the <strong>treatments</strong>. The lecture example obtains treatment rank sums</p><div class="rank-sums"><span>T₁<strong>21</strong></span><span>T₂<strong>10</strong></span><span>T₃<strong>24.5</strong></span><span>T₄<strong>24.5</strong></span></div>
+<p>With \(b=8\) and \(k=4\),</p>\[F_r=\frac{12}{(8)(4)(5)}[(21)^2+(10)^2+(24.5)^2+(24.5)^2]-3(8)(5)=10.61.\]
+<p>The 5% chi-squared critical value for 3 degrees of freedom is 7.815, so this statistic lies in the rejection region. In context, the example concludes that there is a difference in the way the managers evaluate candidates.</p></div>
+<h2>7.5 Manual R workflow</h2><div class="rbox"><div class="rhead">Rank inside blocks → rank sums → statistic</div><pre><code>ranked_rating &lt;- t(apply(wide_rating, 1, rank,
                          ties.method = "average"))
 rank_sums &lt;- colSums(ranked_rating)
 
@@ -111,6 +119,9 @@ p_value &lt;- pchisq(Fr, df = k-1,
 \[r_s=1-\frac{6\sum d_i^2}{n(n^2-1)}.\]
 <p>For the large-sample treatment used in the notes ((n\ge10)),</p>\[z=r_s\sqrt{n-1}.\]
 <div class="scale"><span>−1<br><small>negative</small></span><span>−0.5</span><span>0<br><small>no rank association</small></span><span>0.5</span><span>+1<br><small>positive</small></span></div>
+<h2>8.3 Lecture example — study time and grade</h2><div class="worked"><div class="worked-head">From ranks to a test decision</div><p>The lecture example has \(n=35\) paired observations and \(\sum d_i^2=1962.5\).</p>\[r_s=1-\frac{6(1962.5)}{35(35^2-1)}=0.7251.\]
+<p>The large-sample statistic is</p>\[z=(0.7251)\sqrt{34}=4.228.\]
+<p>The notes compare this with 1.645 at the 5% level for the stated positive-direction test and report a p-value below 0.0001. The contextual conclusion is that study time and grade are positively correlated.</p></div>
 <div class="rbox"><div class="rhead">R — Spearman correlation</div><pre><code>cor.test(x, y, method = "spearman",
          alternative = "two.sided")</code></pre></div></section>
 
@@ -122,6 +133,7 @@ p_value &lt;- pchisq(Fr, df = k-1,
 
 <section id="exam"><div class="chapter">10</div><h1>Exam Workflow & Worked-Answer Structure</h1><p>The tutorials and memos consistently expect more than a test name. A complete answer should show the statistical reasoning from the question to the conclusion.</p>
 <div class="steps"><span>1</span><p><strong>Identify the test and justify it:</strong> objective, number of samples, data type, and independent versus paired/blocked structure.</p><span>2</span><p><strong>State (H_0) and (H_1) in context.</strong></p><span>3</span><p><strong>Compute the statistic:</strong> show rankings, differences or rank sums where required.</p><span>4</span><p><strong>Determine the rejection rule or p-value.</strong></p><span>5</span><p><strong>Make the decision.</strong> Compare the p-value with (alpha) (or statistic with its critical region).</p><span>6</span><p><strong>Conclude in the language of the problem.</strong> Do not finish with only “reject (H_0).”</p></div>
+<h2>10.1 What your final answer should look like</h2><div class="answer-template"><p><strong>Test:</strong> Name the procedure and justify it from the data structure.</p><p><strong>Hypotheses:</strong> State both hypotheses in the language of the problem.</p><p><strong>Calculation:</strong> Show the required ranks/differences and the statistic.</p><p><strong>Critical region / p-value:</strong> State the rule before deciding.</p><p><strong>Conclusion:</strong> Refer back to the original population or research question.</p></div>
 <div class="summary"><h3>Final revision checklist</h3><p>Can you identify the data type? Can you tell paired from independent data? Can you rank ties? Can you state contextual hypotheses? Can you calculate the statistic manually? Can you reproduce the test in R? Can you interpret the p-value in context? If yes, you understand the chapter rather than merely recognising formulas.</p></div></section>
 <footer>STA2020 • Non-Parametric Statistical Techniques • Study companion</footer>
 </main>
